@@ -94,12 +94,28 @@ def smile_check(timeout=15):
 
         if results.multi_face_landmarks:
             lm = results.multi_face_landmarks[0].landmark
-            left = np.array([lm[MOUTH[0]].x * w, lm[MOUTH[0]].y * h])
-            right = np.array([lm[MOUTH[1]].x * w, lm[MOUTH[1]].y * h])
-            center = np.array([lm[MOUTH[2]].x * w, lm[MOUTH[2]].y * h])
+
+            # Mouth landmarks
+            left = np.array([lm[61].x * w, lm[61].y * h])   # left corner
+            right = np.array([lm[291].x * w, lm[291].y * h]) # right corner
+            top = np.array([lm[13].x * w, lm[13].y * h])    # upper lip
+            bottom = np.array([lm[14].x * w, lm[14].y * h]) # lower lip
+
             mouth_width = np.linalg.norm(left - right)
-            mouth_height = np.linalg.norm(center - ((left+right)/2))
-            if mouth_height / mouth_width > 0.3: smiled = True
+            mouth_height = np.linalg.norm(top - bottom)
+
+            # Normalize by face width (eye distance)
+            left_eye = np.array([lm[33].x * w, lm[33].y * h])
+            right_eye = np.array([lm[263].x * w, lm[263].y * h])
+            face_width = np.linalg.norm(left_eye - right_eye)
+
+            # Ratios
+            width_ratio = mouth_width / face_width
+            height_ratio = mouth_height / face_width
+
+            # Smile detection condition (tune thresholds)
+            if width_ratio > 0.45 and height_ratio > 0.03:
+                smiled = True
 
         cv2.putText(frame, "Smile Detected!" if smiled else "Please SMILE",
                     (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
